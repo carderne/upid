@@ -1,0 +1,57 @@
+[tool.rye.scripts]
+fmt = "rye fmt"
+lint = "rye lint --fix"
+check = "pyright"
+test = "rye test"
+all = { chain = ["fmt", "lint", "check", "test"] }
+
+[project]
+name = "upid"
+version = "0.1.0"
+description = "Universally Unique Prefixed Lexicographically Sortable Identifier"
+authors = [
+    { name = "Chris Arderne", email = "chris@rdrn.me" }
+]
+dependencies = []
+readme = "README.md"
+requires-python = ">= 3.9"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.build]
+package-dir = "py"
+
+[tool.rye]
+managed = true
+dev-dependencies = [
+    "pytest~=8.2.2",
+    "pyright~=1.1.370",
+]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 120
+
+[tool.ruff.lint]
+ignore-init-module-imports = true
+select = ["A", "E", "F", "I", "N", "Q", "U", "T100"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["upid"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+include = ["py"]
+strict = ["py/**"]
+reportUnnecessaryTypeIgnoreComment = true
+pythonVersion = "3.9"
+pythonPlatform = "Linux"
+
+[tool.pytest.ini_options]
+addopts = ""
+testpaths = [
+    "py/tests",
+]
