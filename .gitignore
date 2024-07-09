@@ -1,6 +1,9 @@
 # custom
 scripts/
 
+# rust generated files
+target/
+
 # python generated files
 __pycache__/
 *.py[oc]

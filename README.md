@@ -1,5 +1,7 @@
 # UPID
 
+pronounced YOO-pid
+
 **aka Universally Unique Prefixed Lexicographically Sortable Identifier**
 
 This is the spec and Python implementation for UPID.
@@ -9,11 +11,16 @@ UPID is based on [ULID](https://github.com/ulid/spec) but with some modification
 The core idea is that a **meaningful prefix** is specified that is stored in a 128-bit UUID-shaped slot.
 Thus a UPID is **human-readable** (like a Stripe ID), but still efficient to store, sort and index.
 
-UPID allows a prefix of up to **4 characters** (will be right-padded if shorter than 4), includes a non-wrapping timestamp with about 100 millisecond precision, and 64 bits of entropy.
+UPID allows a prefix of up to **4 characters** (will be right-padded if shorter than 4), includes a non-wrapping timestamp with about 300 millisecond precision, and 64 bits of entropy.
 
-This is a UPID:
+This is a UPID in Python:
 ```python
-upid("user")  # user_aaccvpp5guht4dts56je5a
+upid("user")        # user_aaccvpp5guht4dts56je5a
+```
+
+And in Rust:
+```rust
+UPID::new("user")  // user_aaccvpp5guht4dts56je5a
 ```
 
 ## Specification
@@ -57,11 +64,14 @@ Key changes relative to ULID:
 ### Collision
 Relative to ULID, the time precision is reduced from 48 to 40 bits (keeping the most significant bits, so oveflow still won't occur until 10889 AD), and the randomness reduced from 80 to 64 bits.
 
-The timestamp precision at 40 bits is around 100 milliseconds. In order to have a 50% probability of collision with 64 bits of randomness, you would need to generate around **4 billion items per 100 millisecond window**.
+The timestamp precision at 40 bits is around 300 milliseconds. In order to have a 50% probability of collision with 64 bits of randomness, you would need to generate around **4 billion items per 100 millisecond window**.
 
 ## Python implementation
 This aims to be maximally simple to convey the core working of the spec.
 The current Python implementation is entirely based on [mdomke/python-ulid](https://github.com/mdomke/python-ulid).
+
+## Rust implementation
+The current Rust implementation is based on [dylanhart/ulid-rs](https://github.com/dylanhart/ulid-rs), but using the same lookup base32 lookup method as the Python implementation.
 
 ## Development
 ```bash

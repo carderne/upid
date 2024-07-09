@@ -1,0 +1,21 @@
+[package]
+name = "upid"
+license = "MIT"
+authors = ["Chris Arderne <chris@rdrn.me"]
+description = "Universally Unique Prefixed Lexicographically Sortable Identifier"
+readme = "../README.md"
+repository = "https://github.com/carderne/upid"
+
+version = "0.1.0"
+
+edition = "2021"
+
+[dependencies]
+rand = { version = "0.8" }
+
+[lib]
+name = "upid"
+
+[[bin]]
+name = "upid"
+path = "src/main.rs"
