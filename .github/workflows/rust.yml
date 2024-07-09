@@ -1,0 +1,24 @@
+name: rust
+
+on:
+  push:
+    tags:
+      - '*'
+    branches: [ main ]
+    paths:
+      - 'upid_rs/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Format
+        run: cargo fmt --check
+      - name: Lint
+        run: cargo clippy
+      - name: Test
+        run: cargo test --all-features
