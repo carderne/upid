@@ -134,6 +134,11 @@ pgrx install
 pgrx run
 ```
 
+Alternatively, you can try out the Docker image `[carderne/postgres-upid:16](https://hub.docker.com/r/carderne/postgres-upid):
+```bash
+docker run -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 carderne/postgres-upid:16
+```
+
 #### Usage
 ```sql
 CREATE EXTENSION ulid;

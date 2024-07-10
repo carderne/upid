@@ -1,0 +1,26 @@
+# Exclude python code
+py
+
+# General ignore stuff
+.git
+.github
+.gitignore
+.pdm-build
+.pytest_cache
+.python-version
+.ruff_cache
+.venv
+
+# Project files
+LICENSE
+Makefile
+pyproject.toml
+requirements.lock
+requirements-dev.lock
+
+*.md
+*.yml
+
+# Python and Rust build outputs
+dist
+target
