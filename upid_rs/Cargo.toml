@@ -6,7 +6,7 @@ description = "Universally Unique Prefixed Lexicographically Sortable Identifier
 readme = "../README.md"
 repository = "https://github.com/carderne/upid"
 
-version = "0.1.0"
+version = "0.0.999"  # set by Github Actions CI
 
 edition = "2021"
 

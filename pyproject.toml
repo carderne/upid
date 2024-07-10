@@ -7,14 +7,31 @@ all = { chain = ["fmt", "lint", "check", "test"] }
 
 [project]
 name = "upid"
-version = "0.1.0"
 description = "Universally Unique Prefixed Lexicographically Sortable Identifier"
 authors = [
     { name = "Chris Arderne", email = "chris@rdrn.me" }
 ]
-dependencies = []
 readme = "README.md"
+license = {text = "MIT License"}
 requires-python = ">= 3.9"
+keywords = ["UUID", "id", "database"]
+
+dynamic = ["version"]
+
+classifiers = [
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: Unix",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries",
+]
+
+dependencies = []
 
 [build-system]
 requires = ["pdm-backend"]
@@ -22,6 +39,9 @@ build-backend = "pdm.backend"
 
 [tool.pdm.build]
 package-dir = "py"
+
+[tool.pdm.version]
+source = "scm"
 
 [tool.rye]
 managed = true
