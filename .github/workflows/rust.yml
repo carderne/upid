@@ -16,12 +16,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+
       - name: Format
         run: cargo fmt --check
+
       - name: Lint
+        working-directory: upid_rs
         run: cargo clippy
+
       - name: Test
+        working-directory: upid_rs
         run: cargo test --all-features
+
+        # Need to also run upid_pg tests (bit more complicated)
 
   publish:
     needs: test

@@ -1,3 +1,11 @@
+//! # upid
+//!
+//! `upid` is the Rust implementation UPID, an alternative to UUID and ULID
+//! that includes a useful prefix.
+//!
+//! The code below is derived from the following:
+//! https://github.com/dylanhart/ulid-rs
+
 mod b32;
 
 pub use crate::b32::DecodeError;
@@ -96,6 +104,8 @@ impl Upid {
             | ((p[0] as u128) << 16)
             | ((p[1] as u128) << 8)
             | p[2] as u128;
+
+        println!("{res}");
 
         Ok(Upid(res))
     }

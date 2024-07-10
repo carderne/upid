@@ -15,12 +15,20 @@ UPID allows a prefix of up to **4 characters** (will be right-padded if shorter 
 
 This is a UPID in Python:
 ```python
-upid("user")        # user_aaccvpp5guht4dts56je5a
+upid("user")        # user_2accvpp5guht4dts56je5a
 ```
 
 And in Rust:
 ```rust
-UPID::new("user")  // user_aaccvpp5guht4dts56je5a
+UPID::new("user")  // user_2accvpp5guht4dts56je5a
+```
+
+And in Postgres too:
+```sql
+CREATE TABLE users (id upid NOT NULL DEFAULT gen_upid('user') PRIMARY KEY);
+INSERT INTO users DEFAULT VALUES;
+SELECT id FROM users;
+-- user_2accvpp5guht4dts56je5a
 ```
 
 ## Specification
@@ -34,7 +42,7 @@ Key changes relative to ULID:
 7. 4 bits as a version specifier
 
 ```elm
-    user       aaccvpp5      guht4dts56je5       a
+    user       2accvpp5      guht4dts56je5       a
    |----|     |--------|    |-------------|   |-----|
    prefix       time            random        version     total
    4 chars      8 chars         13 chars      1 char      26 chars
@@ -70,11 +78,76 @@ The timestamp precision at 40 bits is around 300 milliseconds. In order to have 
 This aims to be maximally simple to convey the core working of the spec.
 The current Python implementation is entirely based on [mdomke/python-ulid](https://github.com/mdomke/python-ulid).
 
-## Rust implementation
-The current Rust implementation is based on [dylanhart/ulid-rs](https://github.com/dylanhart/ulid-rs), but using the same lookup base32 lookup method as the Python implementation.
+#### Installation
+```bash
+pip install upid
+```
 
-## Development
+#### Usage
+Run from the CLI:
+```bash
+python -m upid user
+```
+
+Use in a program:
+```python
+from upid import upid
+upid("user")
+```
+
+#### Development
 ```bash
 rye sync
 rye run all  # or fmt/lint/check/test
+```
+
+## Rust implementation
+The current Rust implementation is based on [dylanhart/ulid-rs](https://github.com/dylanhart/ulid-rs), but using the same lookup base32 lookup method as the Python implementation.
+
+#### Installation
+```bash
+cargo add upid
+```
+
+#### Usage
+```rust
+use upid::Upid;
+Upid::new("user");
+```
+
+#### Development
+```bash
+cargo check  # or fmt/clippy/test/run
+```
+
+## Postgres extension
+There is also a Postgres extension built on the Rust implementation, using [pgrx](https://github.com/pgcentralfoundation/pgrx) and based on the very similar extension [pksunkara/pgx_ulid](https://github.com/pksunkara/pgx_ulid).
+
+#### Installation
+You will need to install pgrx and follow its installation instructions.
+Something like this:
+```bash
+cargo install --locked cargo-pgrx
+pgrx init
+cd upid_pg
+pgrx install
+pgrx run
+```
+
+#### Usage
+```sql
+CREATE EXTENSION ulid;
+
+
+CREATE TABLE users (
+    id   upid NOT NULL DEFAULT gen_upid('user') PRIMARY KEY,
+    name text NOT NULL
+);
+INSERT INTO users (name) VALUES('Bob');
+SELECT * FROM users;
+```
+
+#### Development
+```bash
+cargo pgrx test
 ```
