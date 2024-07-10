@@ -15,20 +15,29 @@ UPID allows a prefix of up to **4 characters** (will be right-padded if shorter 
 
 This is a UPID in Python:
 ```python
-upid("user")        # user_2accvpp5guht4dts56je5a
+upid("user")            # user_2accvpp5guht4dts56je5a
 ```
 
 And in Rust:
 ```rust
-UPID::new("user")  // user_2accvpp5guht4dts56je5a
+UPID::new("user")      // user_2accvpp5guht4dts56je5a
 ```
 
 And in Postgres too:
 ```sql
 CREATE TABLE users (id upid NOT NULL DEFAULT gen_upid('user') PRIMARY KEY);
 INSERT INTO users DEFAULT VALUES;
-SELECT id FROM users;
--- user_2accvpp5guht4dts56je5a
+SELECT id FROM users;  -- user_2accvpp5guht4dts56je5a
+
+-- this also works
+SELECT id FROM users WHERE id = 'user_2accvpp5guht4dts56je5a';
+```
+
+Plays nice with your server code too, no extra work needed:
+```python
+with psycopg.connect("postgresql://...") as conn:
+    res = conn.execute("SELECT id FROM users").fetchone()
+    print(res)          # user_2accvpp5guht4dts56je5a
 ```
 
 ## Specification
