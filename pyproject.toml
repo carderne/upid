@@ -33,6 +33,10 @@ classifiers = [
 
 dependencies = []
 
+[project.urls]
+homepage = "https://github.com/carderne/upid"
+repository = "https://github.com/carderne/upid"
+
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
