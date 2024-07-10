@@ -36,3 +36,27 @@ jobs:
         run: rye run check
       - name: Test
         run: rye run test
+
+  publish:
+    needs: test
+    environment: release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build
+        run: |
+          pip install build
+          python -m build
+
+      - name: Publish
+        # mimics: twine upload dist/* --skip-existing
+        uses: pypa/gh-action-pypi-publish@release/v1
