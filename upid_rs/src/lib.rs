@@ -105,8 +105,6 @@ impl Upid {
             | ((p[1] as u128) << 8)
             | p[2] as u128;
 
-        println!("{res}");
-
         Ok(Upid(res))
     }
 
