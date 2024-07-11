@@ -8,5 +8,5 @@ fn main() {
         Some(value) => value,
         None => &"".to_string(),
     };
-    println!("{}", Upid::from_prefix(prefix).unwrap().to_string());
+    println!("{}", Upid::from_prefix(prefix).to_string());
 }

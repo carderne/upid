@@ -21,6 +21,8 @@ class UPID:
     """
     The `UPID` contains a 20-bit prefix, 40-bit timestamp and 68 bits of randomness.
 
+    The prefix should only contain lower-case latin alphabet characters.
+
     It is usually created using the `upid(prefix: str)` helper function:
 
         upid("user")  # UPID(user_3accvpp5_guht4dts56je5w)

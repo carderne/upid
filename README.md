@@ -11,7 +11,7 @@ UPID is based on [ULID](https://github.com/ulid/spec) but with some modification
 The core idea is that a **meaningful prefix** is specified that is stored in a 128-bit UUID-shaped slot.
 Thus a UPID is **human-readable** (like a Stripe ID), but still efficient to store, sort and index.
 
-UPID allows a prefix of up to **4 characters** (will be right-padded if shorter than 4), includes a non-wrapping timestamp with about 300 millisecond precision, and 64 bits of entropy.
+UPID allows a prefix of up to **4 characters** (will be right-padded if shorter than 4), includes a non-wrapping timestamp with about 250 millisecond precision, and 64 bits of entropy.
 
 This is a UPID in Python:
 ```python
@@ -81,7 +81,7 @@ Key changes relative to ULID:
 ### Collision
 Relative to ULID, the time precision is reduced from 48 to 40 bits (keeping the most significant bits, so oveflow still won't occur until 10889 AD), and the randomness reduced from 80 to 64 bits.
 
-The timestamp precision at 40 bits is around 300 milliseconds. In order to have a 50% probability of collision with 64 bits of randomness, you would need to generate around **4 billion items per 100 millisecond window**.
+The timestamp precision at 40 bits is around 250 milliseconds. In order to have a 50% probability of collision with 64 bits of randomness, you would need to generate around **4 billion items per 250 millisecond window**.
 
 ## Python implementation
 This aims to be maximally simple to convey the core working of the spec.
@@ -105,9 +105,17 @@ upid("user")
 ```
 
 #### Development
+Code and tests are in the [py/](./py/) directory. Using [Rye](https://rye.astral.sh/) for development (installation instructions at the link).
+
 ```bash
+# can be run from the repo root
 rye sync
 rye run all  # or fmt/lint/check/test
+```
+
+If you just want to have a look around, pip should also work:
+```bash
+pip install -e .
 ```
 
 ## Rust implementation
@@ -125,28 +133,32 @@ Upid::new("user");
 ```
 
 #### Development
+Code and tests are in the [upid_rs/](./upid_rs/) directory.
+
 ```bash
-cargo check  # or fmt/clippy/test/run
+cd upid_rs
+cargo check  # or fmt/clippy/build/test/run
 ```
 
 ## Postgres extension
 There is also a Postgres extension built on the Rust implementation, using [pgrx](https://github.com/pgcentralfoundation/pgrx) and based on the very similar extension [pksunkara/pgx_ulid](https://github.com/pksunkara/pgx_ulid).
 
 #### Installation
-You will need to install pgrx and follow its installation instructions.
+You can try out the Docker image [carderne/postgres-upid:16](https://hub.docker.com/r/carderne/postgres-upid):
+```bash
+docker run -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 carderne/postgres-upid:16
+```
+
+If you want to install it into another Postgres, you'll install pgrx and follow its [installation instructions](https://github.com/pgcentralfoundation/pgrx/blob/develop/cargo-pgrx/README.md).
 Something like this:
 ```bash
 cargo install --locked cargo-pgrx
 pgrx init
 cd upid_pg
 pgrx install
-pgrx run
 ```
 
-Alternatively, you can try out the Docker image `[carderne/postgres-upid:16](https://hub.docker.com/r/carderne/postgres-upid):
-```bash
-docker run -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 carderne/postgres-upid:16
-```
+Installable binaries will come soon.
 
 #### Usage
 ```sql
@@ -162,6 +174,14 @@ SELECT * FROM users;
 ```
 
 #### Development
+Code and tests are in the [upid_pg/](./upid_pg/) directory.
+
 ```bash
-cargo pgrx test
+cd upid_pg
+cargo check  # or fmt/clippy
+
+# must test/run/install with pgrx
+# this will compile it into a Postgres installation
+# and run the tests there, or drop you into a psql prompt
+cargo pgrx test  # or run/install
 ```

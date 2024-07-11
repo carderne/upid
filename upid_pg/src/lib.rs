@@ -81,7 +81,7 @@ impl FromDatum for upid {
 
 #[pg_extern]
 fn gen_upid(prefix: &str) -> upid {
-    upid(InnerUpid::new(prefix).unwrap().0)
+    upid(InnerUpid::new(prefix).0)
 }
 
 #[pg_extern(immutable, parallel_safe)]

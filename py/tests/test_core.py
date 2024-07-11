@@ -54,3 +54,16 @@ def test_datetime_roundtrip() -> None:
     got = a.datetime
     diff = want - got
     assert diff.total_seconds() * consts.MS_PER_SEC < TS_EPS
+
+
+def test_invalid_prefix() -> None:
+    # Invalid characters just become 'zzzz'
+    want = "zzzz"
+
+    # even if too long
+    got = UPID.from_prefix("[0#/]]1,").prefix
+    assert got == want
+
+    # or too short
+    got = UPID.from_prefix("[0").prefix
+    assert got == want

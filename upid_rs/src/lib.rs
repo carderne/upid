@@ -27,28 +27,34 @@ pub struct Upid(pub u128);
 
 impl Upid {
     /// Creates a new Upid with the provided prefix and current time (UTC)
+    ///
+    /// The prefix should only contain lower-case latin alphabet characters.
     /// # Example
     /// ```rust
     /// use upid::Upid;
     ///
     /// let my_upid = Upid::new("user");
     /// ```
-    pub fn new(prefix: &str) -> Result<Upid, DecodeError> {
+    pub fn new(prefix: &str) -> Upid {
         Upid::from_prefix(prefix)
     }
 
     /// Creates a Upid with the provided prefix and current time (UTC)
+    ///
+    /// The prefix should only contain lower-case latin alphabet characters.
     /// # Example
     /// ```rust
     /// use upid::Upid;
     ///
     /// let my_upid = Upid::from_prefix("user");
     /// ```
-    pub fn from_prefix(prefix: &str) -> Result<Upid, DecodeError> {
+    pub fn from_prefix(prefix: &str) -> Upid {
         Upid::from_prefix_and_datetime(prefix, now())
     }
 
     /// Creates a new Upid with the given prefix and datetime
+    ///
+    /// The prefix should only contain lower-case latin alphabet characters.
     ///
     /// This will take the maximum of the `[SystemTime]` argument and `[SystemTime::UNIX_EPOCH]`
     /// as earlier times are not valid for a Upid timestamp
@@ -60,10 +66,7 @@ impl Upid {
     ///
     /// let upid = Upid::from_prefix_and_datetime("user", SystemTime::now());
     /// ```
-    pub fn from_prefix_and_datetime(
-        prefix: &str,
-        datetime: SystemTime,
-    ) -> Result<Upid, DecodeError> {
+    pub fn from_prefix_and_datetime(prefix: &str, datetime: SystemTime) -> Upid {
         let milliseconds = datetime
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or(Duration::ZERO)
@@ -73,6 +76,8 @@ impl Upid {
 
     /// Creates a new Upid with the given prefix and timestamp in millisecons
     ///
+    /// The prefix should only contain lower-case latin alphabet characters.
+    ///
     /// # Example
     /// ```rust
     /// use upid::Upid;
@@ -80,10 +85,7 @@ impl Upid {
     /// let ms: u128 = 1720568902000;
     /// let upid = Upid::from_prefix_and_milliseconds("user", ms);
     /// ```
-    pub fn from_prefix_and_milliseconds(
-        prefix: &str,
-        milliseconds: u128,
-    ) -> Result<Upid, DecodeError> {
+    pub fn from_prefix_and_milliseconds(prefix: &str, milliseconds: u128) -> Upid {
         // cut off the 8 lsb drops precision to 256 ms
         // future version could play with this differently
         // eg drop 4 bits on each side
@@ -97,7 +99,13 @@ impl Upid {
         let prefix = format!("{:z<4}", prefix);
         let prefix: String = prefix.chars().take(4).collect();
         let prefix = format!("{}{}", prefix, VERSION);
-        let p = b32::decode_prefix(prefix.as_bytes())?;
+
+        // decode_prefix Errors if the last character is past 'j' in the b32 alphabet
+        // and we control that with the VERSION variable
+        // If the prefix has characters from outside the alphabet, they will be wrapped into 'z's
+        // And we have ensured above that it is exactly 5 characters long
+        let p = b32::decode_prefix(prefix.as_bytes())
+            .expect("decode_prefix failed with version character overflow");
 
         let res = (time_bits << 88)
             | (random << 24)
@@ -105,7 +113,7 @@ impl Upid {
             | ((p[1] as u128) << 8)
             | p[2] as u128;
 
-        Ok(Upid(res))
+        Upid(res)
     }
 
     /// Gets the datetime of when this Upid was created accurate to around 300ms
@@ -116,7 +124,7 @@ impl Upid {
     /// use upid::Upid;
     ///
     /// let dt = SystemTime::now();
-    /// let upid = Upid::from_prefix_and_datetime("user", dt).unwrap();
+    /// let upid = Upid::from_prefix_and_datetime("user", dt);
     ///
     /// assert!(dt + Duration::from_millis(300) >= upid.datetime());
     /// ```
@@ -134,7 +142,6 @@ impl Upid {
     /// let text = "user_aaccvpp5guht4dts56je5a";
     /// let result = Upid::from_string(text);
     ///
-    /// assert!(result.is_ok());
     /// assert_eq!(&result.unwrap().to_string(), text);
     /// ```
     pub fn from_string(encoded: &str) -> Result<Upid, DecodeError> {
@@ -151,7 +158,7 @@ impl Upid {
     /// use upid::Upid;
     ///
     /// let prefix = "user";
-    /// let upid = Upid::from_prefix(prefix).unwrap();
+    /// let upid = Upid::from_prefix(prefix);
     ///
     /// assert_eq!(upid.prefix(), prefix);
     /// ```
@@ -168,7 +175,7 @@ impl Upid {
     /// use upid::Upid;
     ///
     /// let ms: u128 = 1720568902000;
-    /// let upid = Upid::from_prefix_and_milliseconds("user", ms).unwrap();
+    /// let upid = Upid::from_prefix_and_milliseconds("user", ms);
     ///
     /// assert!(ms - u128::from(upid.milliseconds()) < 256);
     /// ```
@@ -221,7 +228,7 @@ impl Upid {
 
 impl Default for Upid {
     fn default() -> Self {
-        Upid::new("").unwrap()
+        Upid::new("")
     }
 }
 
@@ -281,7 +288,7 @@ mod tests {
 
     #[test]
     fn test_dynamic() {
-        let upid = Upid::new("user").unwrap();
+        let upid = Upid::new("user");
         let encoded = upid.to_string();
         let upid2 = Upid::from_string(&encoded).expect("failed to deserialize");
         assert_eq!(upid, upid2);
@@ -290,9 +297,8 @@ mod tests {
     #[test]
     fn test_order() {
         let dt = SystemTime::now();
-        let upid1 = Upid::from_prefix_and_datetime("user", dt).unwrap();
-        let upid2 =
-            Upid::from_prefix_and_datetime("user", dt + Duration::from_millis(300)).unwrap();
+        let upid1 = Upid::from_prefix_and_datetime("user", dt);
+        let upid2 = Upid::from_prefix_and_datetime("user", dt + Duration::from_millis(300));
         assert!(upid1 < upid2);
     }
 
@@ -303,7 +309,7 @@ mod tests {
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap()
             .as_millis();
-        let upid = Upid::from_prefix_and_milliseconds("user", want).unwrap();
+        let upid = Upid::from_prefix_and_milliseconds("user", want);
         let got = u128::from(upid.milliseconds());
 
         assert!(want - got < EPS);
@@ -312,9 +318,23 @@ mod tests {
     #[test]
     fn test_datetime() {
         let dt = SystemTime::now();
-        let upid = Upid::from_prefix_and_datetime("user", dt).unwrap();
+        let upid = Upid::from_prefix_and_datetime("user", dt);
 
         assert!(upid.datetime() <= dt);
         assert!(upid.datetime() + Duration::from_millis(300) >= dt);
+    }
+
+    #[test]
+    fn test_invalid_prefix() {
+        // Invalid characters just become 'zzzz'
+        let want = "zzzz";
+
+        // even if too long
+        let got = Upid::from_prefix("[0#/]]1,").prefix();
+        assert_eq!(got, want);
+
+        // or too short
+        let got = Upid::from_prefix("[0").prefix();
+        assert_eq!(got, want);
     }
 }
