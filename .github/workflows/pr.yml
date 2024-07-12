@@ -3,6 +3,8 @@ name: pr
 on:
   pull_request:
     types: [opened, reopened, synchronize]
+  push:
+    branches: [main]
 
 concurrency:
   group: pr-${{ github.event.number }}
