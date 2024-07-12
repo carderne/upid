@@ -114,7 +114,7 @@ jobs:
           cargo pgrx init --pg${{ matrix.postgres }}=/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config
       - name: Build
         run: |
-          cargo pgrx package --no-default-features --features "pg${{ matrix.postgres }}"
+          cargo pgrx package --no-default-features --features "pg${{ matrix.postgres }}" --package upid_pg
 
           mkdir archive
           cp `find target/release -type f -name "${{ env.NAME }}*"` archive
