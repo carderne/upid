@@ -74,7 +74,6 @@ jobs:
     # https://github.com/pksunkara/pgx_ulid/blob/master/.github/workflows/release.yml
     env:
       NAME: upid_pg
-    name: Build & Release for linux
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
@@ -103,7 +102,7 @@ jobs:
         run: |
           # selects the pgVer from pg_config on path
           # https://github.com/tcdi/pgrx/issues/288
-          cargo pgrx package --no-default-features --features pg16
+          cargo pgrx package --no-default-features --features pg16 --package upid_pg
 
           # Create installable package
           mkdir archive
