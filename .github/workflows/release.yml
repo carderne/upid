@@ -1,0 +1,155 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish-python:
+    environment: release  # needed for PyPI OIDC
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: |
+          pip install build
+          python -m build
+      - name: Publish
+        # mimics: twine upload dist/* --skip-existing
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  publish-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: set version
+        env:
+          RELEASE_TAG: ${{ github.ref }}
+        run: |
+          sed -i "s/0\\.0\\.999/${RELEASE_TAG##*\/v}/" upid_rs/Cargo.toml
+          sed -i "s/0\\.0\\.999/${RELEASE_TAG##*\/v}/" Cargo.lock
+      - uses: dtolnay/rust-toolchain@stable
+      - name: publish
+        env:
+          CRATES_TOKEN: ${{ secrets.CRATES_TOKEN }}
+        run: |
+          cargo publish --package upid --token $CRATES_TOKEN --allow-dirty
+
+  docker-pg:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Extract tag name
+        id: extract_tag
+        run: echo "RELEASE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+      - name: Docker Buildx base image
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --output "type=image,push=true" \
+            --tag "carderne/postgres-upid:16-${RELEASE_TAG}" \
+            --tag "carderne/postgres-upid:16" \
+            --tag "carderne/postgres-upid:latest" \
+            --cache-from "carderne/postgres-upid:latest" \
+            --cache-to type=inline \
+            .
+
+  build-pg:
+    # modified from this workflow:
+    # https://github.com/pksunkara/pgx_ulid/blob/master/.github/workflows/release.yml
+    env:
+      NAME: upid_pg
+    name: Build & Release for linux
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install dependencies
+        run: |
+          # Add postgres package repo
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/trusted.gpg.d/pgdg.asc &>/dev/null
+
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends git build-essential libpq-dev curl libreadline6-dev zlib1g-dev pkg-config cmake
+          sudo apt-get install -y --no-install-recommends libreadline-dev zlib1g-dev flex bison libxml2-dev libxslt-dev libssl-dev libxml2-utils xsltproc ccache
+          sudo apt-get install -y --no-install-recommends clang libclang-dev llvm-dev gcc tree
+
+          # Install requested postgres version
+          sudo apt-get install -y postgresql-16 postgresql-server-dev-16 -y
+
+          # Ensure installed pg_config is first on path
+          export PATH=$PATH:/usr/lib/postgresql/16/bin
+
+          cargo install cargo-pgrx --version 0.11.2 --locked
+          cargo pgrx init --pg16=/usr/lib/postgresql/16/bin/pg_config
+      - name: Build artifacts
+        run: |
+          # selects the pgVer from pg_config on path
+          # https://github.com/tcdi/pgrx/issues/288
+          cargo pgrx package --no-default-features --features pg16
+
+          # Create installable package
+          mkdir archive
+          cp `find target/release -type f -name "${{ env.NAME }}*"` archive
+
+          # Copy files into directory structure
+          mkdir -p package/usr/lib/postgresql/lib
+          mkdir -p package/var/lib/postgresql/extension
+          cp archive/*.so package/usr/lib/postgresql/lib
+          cp archive/*.control package/var/lib/postgresql/extension
+          cp archive/*.sql package/var/lib/postgresql/extension
+
+          # symlinks to Copy files into directory structure
+          mkdir -p package/usr/lib/postgresql/16/lib
+          cd package/usr/lib/postgresql/16/lib
+          cp -s ../../lib/*.so .
+          cd ../../../../../..
+
+          mkdir -p package/usr/share/postgresql/16/extension
+          cd package/usr/share/postgresql/16/extension
+
+          cp -s ../../../../../var/lib/postgresql/extension/${{ env.NAME }}.control .
+          cp -s ../../../../../var/lib/postgresql/extension/${{ env.NAME }}*.sql .
+          cd ../../../../../..
+
+          # Create install control file
+          extension_version=${{ github.ref_name }}
+          # strip the leading v
+          deb_version=${extension_version:1}
+
+          mkdir -p package/DEBIAN
+          touch package/DEBIAN/control
+          echo 'Package: ${{ env.NAME }}' >> package/DEBIAN/control
+          echo 'Version:' ${deb_version} >> package/DEBIAN/control
+          echo 'Architecture: amd64' >> package/DEBIAN/control
+          echo 'Maintainer: Chris Arderne' >> package/DEBIAN/control
+          echo 'Description: A PostgreSQL extension for UPID' >> package/DEBIAN/control
+
+          # Create deb package
+          sudo chown -R root:root package
+          sudo chmod -R 00755 package
+          sudo dpkg-deb -Zxz --build --root-owner-group package
+          mv package.deb ${{ env.NAME }}-${{ github.ref_name }}-pg16-amd64-linux-gnu.deb
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.NAME }}-${{ github.ref_name }}-pg16-amd64-linux-gnu.deb
+          draft: true
