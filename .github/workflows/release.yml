@@ -6,6 +6,14 @@ on:
       - 'v*'
 
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+
   publish-python:
     environment: release  # needed for PyPI OIDC
     runs-on: ubuntu-latest
@@ -72,10 +80,16 @@ jobs:
   build-pg:
     # modified from this workflow:
     # https://github.com/pksunkara/pgx_ulid/blob/master/.github/workflows/release.yml
-    env:
-      NAME: upid-pg
+    needs: create-release
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres: [16]
+    env:
+      NAME: upid_pg
+      PKG_NAME: upid-pg
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -91,20 +105,17 @@ jobs:
           sudo apt-get install -y --no-install-recommends clang libclang-dev llvm-dev gcc tree
 
           # Install requested postgres version
-          sudo apt-get install -y postgresql-16 postgresql-server-dev-16 -y
+          sudo apt-get install -y postgresql-${{ matrix.postgres }} postgresql-server-dev-${{ matrix.postgres }} -y
 
           # Ensure installed pg_config is first on path
-          export PATH=$PATH:/usr/lib/postgresql/16/bin
+          export PATH=$PATH:/usr/lib/postgresql/${{ matrix.postgres }}/bin
 
           cargo install cargo-pgrx --version 0.11.2 --locked
-          cargo pgrx init --pg16=/usr/lib/postgresql/16/bin/pg_config
-      - name: Build artifacts
+          cargo pgrx init --pg${{ matrix.postgres }}=/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config
+      - name: Build
         run: |
-          # selects the pgVer from pg_config on path
-          # https://github.com/tcdi/pgrx/issues/288
-          cargo pgrx package --no-default-features --features pg16 --package upid_pg
+          cargo pgrx package --no-default-features --features "pg${{ matrix.postgres }}"
 
-          # Create installable package
           mkdir archive
           cp `find target/release -type f -name "${{ env.NAME }}*"` archive
 
@@ -116,26 +127,26 @@ jobs:
           cp archive/*.sql package/var/lib/postgresql/extension
 
           # symlinks to Copy files into directory structure
-          mkdir -p package/usr/lib/postgresql/16/lib
-          cd package/usr/lib/postgresql/16/lib
+          mkdir -p package/usr/lib/postgresql/"${{ matrix.postgres }}"/lib
+          cd package/usr/lib/postgresql/"${{ matrix.postgres }}"/lib
           cp -s ../../lib/*.so .
           cd ../../../../../..
 
-          mkdir -p package/usr/share/postgresql/16/extension
-          cd package/usr/share/postgresql/16/extension
+          mkdir -p package/usr/share/postgresql/"${{ matrix.postgres }}"/extension
+          cd package/usr/share/postgresql/"${{ matrix.postgres }}"/extension
 
-          cp -s ../../../../../var/lib/postgresql/extension/${{ env.NAME }}.control .
-          cp -s ../../../../../var/lib/postgresql/extension/${{ env.NAME }}*.sql .
+          cp -s ../../../../../var/lib/postgresql/extension/"${{ env.NAME }}".control .
+          cp -s ../../../../../var/lib/postgresql/extension/"${{ env.NAME }}"*.sql .
           cd ../../../../../..
 
           # Create install control file
-          extension_version=${{ github.ref_name }}
+          extension_version="${{ github.ref_name }}"
           # strip the leading v
           deb_version=${extension_version:1}
 
           mkdir -p package/DEBIAN
           touch package/DEBIAN/control
-          echo 'Package: ${{ env.NAME }}' >> package/DEBIAN/control
+          echo 'Package: ${{ env.PKG_NAME }}' >> package/DEBIAN/control
           echo 'Version:' ${deb_version} >> package/DEBIAN/control
           echo 'Architecture: amd64' >> package/DEBIAN/control
           echo 'Maintainer: Chris Arderne' >> package/DEBIAN/control
@@ -145,10 +156,12 @@ jobs:
           sudo chown -R root:root package
           sudo chmod -R 00755 package
           sudo dpkg-deb -Zxz --build --root-owner-group package
-          mv package.deb ${{ env.NAME }}-${{ github.ref_name }}-pg16-amd64-linux-gnu.deb
 
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ${{ env.NAME }}-${{ github.ref_name }}-pg16-amd64-linux-gnu.deb
-          draft: true
+      - name: Upload deb to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=${{ github.ref_name }}
+          FILE=${{ env.PKG_NAME }}-${TAG}-pg16-amd64-linux-gnu.deb
+          mv package.deb $FILE
+          gh release upload "$TAG" "$FILE"
