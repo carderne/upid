@@ -73,7 +73,7 @@ jobs:
     # modified from this workflow:
     # https://github.com/pksunkara/pgx_ulid/blob/master/.github/workflows/release.yml
     env:
-      NAME: upid_pg
+      NAME: upid-pg
     timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
