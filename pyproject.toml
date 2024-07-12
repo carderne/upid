@@ -1,5 +1,6 @@
 [tool.rye.scripts]
 fmt = "rye fmt"
+
 lint = "rye lint --fix"
 check = "pyright"
 test = "rye test"
