@@ -33,7 +33,7 @@ SELECT id FROM users;  -- user_2accvpp5guht4dts56je5a
 SELECT id FROM users WHERE id = 'user_2accvpp5guht4dts56je5a';
 ```
 
-Plays nice with your server code too, no extra work needed:
+Plays nice with your server code, no extra work needed:
 ```python
 with psycopg.connect("postgresql://...") as conn:
     res = conn.execute("SELECT id FROM users").fetchone()
@@ -79,7 +79,7 @@ Key changes relative to ULID:
 ```
 
 ### Collision
-Relative to ULID, the time precision is reduced from 48 to 40 bits (keeping the most significant bits, so oveflow still won't occur until 10889 AD), and the randomness reduced from 80 to 64 bits.
+Relative to ULID, the time precision is reduced from 48 to 40 bits (keeping the most significant bits, so overflow still won't occur until 10889 AD), and the randomness reduced from 80 to 64 bits.
 
 The timestamp precision at 40 bits is around 250 milliseconds. In order to have a 50% probability of collision with 64 bits of randomness, you would need to generate around **4 billion items per 250 millisecond window**.
 
@@ -104,8 +104,41 @@ from upid import upid
 upid("user")
 ```
 
+Or more explicitly:
+```python
+from upid import UPID
+UPID.from_prefix("user")
+```
+
+Or specifying your own timestamp or datetime
+```python
+import time, datetime
+UPID.from_prefix_and_milliseconds("user", milliseconds)
+UPID.from_prefix_and_datetime("user", datetime.datetime.now())
+```
+
+From and to a string:
+```python
+u = UPID.from_str("user_2accvpp5guht4dts56je5a")
+u.to_str()        # user_2a...
+```
+
+Get stuff out:
+```python
+u.prefix     # user
+u.datetime   # 2024-07-07 ...
+```
+
+Convert to other formats:
+```python
+int(u)       # 2079795568564925668398930358940603766
+u.hex        # 01908dd6a3669b912738191ea3d61576
+u.to_uuid()  # UUID('01908dd6-a366-9b91-2738-191ea3d61576')
+```
+
 #### Development
-Code and tests are in the [py/](./py/) directory. Using [Rye](https://rye.astral.sh/) for development (installation instructions at the link).
+Code and tests are in the [py/](./py/) directory.
+Using [Rye](https://rye.astral.sh/) for development (installation instructions at the link).
 
 ```bash
 # can be run from the repo root
@@ -117,6 +150,8 @@ If you just want to have a look around, pip should also work:
 ```bash
 pip install -e .
 ```
+
+Please open a PR if you spot a bug or improvement!
 
 ## Rust implementation
 The current Rust implementation is based on [dylanhart/ulid-rs](https://github.com/dylanhart/ulid-rs), but using the same lookup base32 lookup method as the Python implementation.
@@ -132,6 +167,31 @@ use upid::Upid;
 Upid::new("user");
 ```
 
+Or specifying your own timestamp or datetime:
+```rust
+use std::time::SystemTime;
+Upid::from_prefix_and_milliseconds("user", 1720366572288);
+Upid::from_prefix_and_datetime("user", SystemTime::now());
+```
+
+From and to a string:
+```rust
+let u = Upid::from_string("user_2accvpp5guht4dts56je5a");
+u.to_string();
+```
+
+Get stuff out:
+```rust
+u.prefix();       // user
+u.datetime();     // 2024-07-07 ...
+u.milliseconds(); // 17203...
+```
+
+Convert to other formats:
+```rust
+u.to_bytes();
+```
+
 #### Development
 Code and tests are in the [upid_rs/](./upid_rs/) directory.
 
@@ -140,48 +200,80 @@ cd upid_rs
 cargo check  # or fmt/clippy/build/test/run
 ```
 
+Please open a PR if you spot a bug or improvement!
+
 ## Postgres extension
 There is also a Postgres extension built on the Rust implementation, using [pgrx](https://github.com/pgcentralfoundation/pgrx) and based on the very similar extension [pksunkara/pgx_ulid](https://github.com/pksunkara/pgx_ulid).
 
 #### Installation
-You can try out the Docker image [carderne/postgres-upid:16](https://hub.docker.com/r/carderne/postgres-upid):
+The easiest would be to try out the Docker image [carderne/postgres-upid:16](https://hub.docker.com/r/carderne/postgres-upid), currently built for arm64 and amd64 but only for Postgres 16:
 ```bash
 docker run -e POSTGRES_HOST_AUTH_METHOD=trust -p 5432:5432 carderne/postgres-upid:16
 ```
 
-If you want to install it into another Postgres, you'll install pgrx and follow its [installation instructions](https://github.com/pgcentralfoundation/pgrx/blob/develop/cargo-pgrx/README.md).
-Something like this:
-```bash
-cargo install --locked cargo-pgrx
-pgrx init
-cd upid_pg
-pgrx install
-```
+You can also grab a Linux `.deb` from the [Releases](https://github.com/carderne/upid/releases) page. This is built for Postgres 16 and amd64 only.
 
-Installable binaries will come soon.
+More architectures and versions will follow once it is out of alpha.
 
 #### Usage
 ```sql
-CREATE EXTENSION ulid;
-
+CREATE EXTENSION upid_pg;
 
 CREATE TABLE users (
     id   upid NOT NULL DEFAULT gen_upid('user') PRIMARY KEY,
     name text NOT NULL
 );
+
 INSERT INTO users (name) VALUES('Bob');
+
 SELECT * FROM users;
+--              id              | name
+-- -----------------------------+------
+--  user_2accvpp5guht4dts56je5a | Bob
+```
+
+You can get the raw `bytea` data, or the prefix or timestamp:
+```sql
+SELECT upid_to_bytea(id) FROM users;
+-- \x019...
+
+SELECT upid_to_prefix(id) FROM users;
+-- 'user'
+
+SELECT upid_to_timestamp(id) FROM users;
+-- 2024-07-07 ...
+```
+
+You can convert a `UPID` to a regular Postgres `UUID`:
+```sql
+SELECT upid_to_uuid(gen_upid('user'));
+```
+
+Or the reverse (although the prefix and timestamp will no longer make sense):
+```sql
+select upid_from_uuid(gen_random_uuid());
 ```
 
 #### Development
-Code and tests are in the [upid_pg/](./upid_pg/) directory.
-
+If you want to install it into another Postgres, you'll install pgrx and follow its [installation instructions](https://github.com/pgcentralfoundation/pgrx/blob/develop/cargo-pgrx/README.md).
+Something like this:
 ```bash
 cd upid_pg
-cargo check  # or fmt/clippy
+cargo install --locked cargo-pgrx
+cargo pgrx init
+cargo pgrx install
+```
 
-# must test/run/install with pgrx
-# this will compile it into a Postgres installation
-# and run the tests there, or drop you into a psql prompt
-cargo pgrx test  # or run/install
+Some `cargo` commands work as normal:
+```bash
+cargo check  # or fmt/clippy
+```
+
+But building, testing and running must be done via pgrx.
+This will compile it into a Postgres installation, and allow an interactive session and tests there.
+
+```bash
+cargo pgrx test pg16
+# or       run
+# or       install
 ```

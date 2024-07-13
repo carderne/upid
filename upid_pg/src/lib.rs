@@ -1,10 +1,10 @@
 //! # upid_pg
 //!
 //! `upid_pg` is a thin wrapper for [upid](https://crates.io/crates/upid)
-//! providing the UPID datatype and generator as a Postgres extension
-//!
-//! The code below is based largely on the following:
-//! https://github.com/pksunkara/pgx_ulid
+//! providing the UPID datatype and generator as a Postgres extension.
+
+// The code below is based largely on the following:
+// https://github.com/pksunkara/pgx_ulid
 
 use core::ffi::CStr;
 use inner_upid::Upid as InnerUpid;
@@ -103,6 +103,11 @@ fn upid_to_bytea(input: upid) -> Vec<u8> {
     let mut bytes = input.0.to_ne_bytes();
     bytes.reverse();
     bytes.to_vec()
+}
+
+#[pg_extern(immutable, parallel_safe)]
+fn upid_to_prefix(input: upid) -> String {
+    InnerUpid(input.0).prefix()
 }
 
 #[pg_extern(immutable, parallel_safe)]

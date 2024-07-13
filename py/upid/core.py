@@ -21,7 +21,8 @@ class UPID:
     """
     The `UPID` contains a 20-bit prefix, 40-bit timestamp and 68 bits of randomness.
 
-    The prefix should only contain lower-case latin alphabet characters.
+    The prefix should only contain lower-case latin alphabet characters and be max
+    four characters long.
 
     It is usually created using the `upid(prefix: str)` helper function:
 
@@ -78,10 +79,19 @@ class UPID:
 
     @classmethod
     def from_str(cls: type[Self], string: str) -> Self:
+        """
+        Convert the provided `str` to a `UPID`.
+
+        Throws a `ValueError` if the string is invalid:
+        - too long
+        - too short
+        - contains characters not in the `ENCODE` base32 alphabet
+        """
         return cls(b32.decode(string))
 
     @property
     def prefix(self) -> str:
+        """Return just the prefix as a `str`."""
         prefix, _ = b32.encode_prefix(self.b[b32.END_RANDO_BIN :])
         return prefix
 
@@ -99,14 +109,18 @@ class UPID:
     def hex(self) -> str:
         return self.b.hex()
 
+    def to_str(self) -> str:
+        return b32.encode(self.b)
+
     def to_uuid(self) -> uuid.UUID:
+        """Convert to a standard Python UUID."""
         return uuid.UUID(bytes=self.b)
 
     def __repr__(self) -> str:
         return f"UPID({self!s})"
 
     def __str__(self) -> str:
-        return b32.encode(self.b)
+        return self.to_str()
 
     def __int__(self) -> int:
         return int.from_bytes(self.b, "big")

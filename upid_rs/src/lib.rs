@@ -1,14 +1,41 @@
 //! # upid
 //!
-//! `upid` is the Rust implementation UPID, an alternative to UUID and ULID
-//! that includes a useful prefix.
+//! Rust implementation of UPID, an alternative to UUID and ULID
+//! that includes a useful four-character prefix.
 //!
-//! The code below is derived from the following:
-//! https://github.com/dylanhart/ulid-rs
+//! It is still stored as a `u128` binary, is still sortable by date,
+//! and has 64 bits of randomness. It uses a modified form of
+//! Crockford's base32 alphabet that uses lower-case and prioritises
+//! letters so that any four-letter alpha prefix can be specified.
+//!
+//! ## Quickstart
+//!
+//! ```rust
+//! use upid::Upid;
+//! let upid = Upid::new("user");
+//!
+//! let text = upid.to_string();
+//!
+//! let same = Upid::from_string(&text);
+//! assert_eq!(upid, same.unwrap());
+//! ```
+//!
+//! If an invalid prefix is specified, it will be handled as follows:
+//! - invalid letters (not in the [`ENCODE`] alphabet) replaced by 'z'
+//! - too short will be right-padded with 'z'
+//! - too long will be clipped to four characters
+//! ```rust
+//! use upid::Upid;
+//! let upid = Upid::new("00");
+//! assert_eq!(upid.prefix(), "zzzz");
+//! ```
+
+// The code below is derived from the following:
+// https://github.com/dylanhart/ulid-rs
 
 mod b32;
 
-pub use crate::b32::DecodeError;
+pub use crate::b32::{DecodeError, ENCODE};
 
 use std::fmt;
 use std::str::FromStr;
@@ -22,6 +49,12 @@ fn now() -> std::time::SystemTime {
     std::time::SystemTime::now()
 }
 
+/// A Upid is a unique 128-bit identifier is sortable and has a useful prefix.
+///
+/// It is encoded as a 26 character string using a custom base32 alphabet based
+/// on Crockford's, but with lower-case and prioritising letters over numerals.
+/// In the binary, the first 40 bits are a unix timestamp with 256ms precision,
+/// the next 64 are random bits, and the last 24 are the prefix and version identifier.
 #[derive(Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct Upid(pub u128);
 
@@ -41,7 +74,7 @@ impl Upid {
 
     /// Creates a Upid with the provided prefix and current time (UTC)
     ///
-    /// The prefix should only contain lower-case latin alphabet characters.
+    /// The prefix should contain four lower-case latin alphabet characters.
     /// # Example
     /// ```rust
     /// use upid::Upid;
@@ -116,23 +149,6 @@ impl Upid {
         Upid(res)
     }
 
-    /// Gets the datetime of when this Upid was created accurate to around 300ms
-    ///
-    /// # Example
-    /// ```rust
-    /// use std::time::{SystemTime, Duration};
-    /// use upid::Upid;
-    ///
-    /// let dt = SystemTime::now();
-    /// let upid = Upid::from_prefix_and_datetime("user", dt);
-    ///
-    /// assert!(dt + Duration::from_millis(300) >= upid.datetime());
-    /// ```
-    pub fn datetime(&self) -> SystemTime {
-        let stamp = self.milliseconds();
-        SystemTime::UNIX_EPOCH + Duration::from_millis(stamp)
-    }
-
     /// Creates a Upid from a Base32 encoded string
     ///
     /// # Example
@@ -149,6 +165,23 @@ impl Upid {
             Ok(int_val) => Ok(Upid(int_val)),
             Err(err) => Err(err),
         }
+    }
+
+    /// Gets the datetime of when this Upid was created accurate to around 256ms
+    ///
+    /// # Example
+    /// ```rust
+    /// use std::time::{SystemTime, Duration};
+    /// use upid::Upid;
+    ///
+    /// let dt = SystemTime::now();
+    /// let upid = Upid::from_prefix_and_datetime("user", dt);
+    ///
+    /// assert!(dt + Duration::from_millis(257) >= upid.datetime());
+    /// ```
+    pub fn datetime(&self) -> SystemTime {
+        let stamp = self.milliseconds();
+        SystemTime::UNIX_EPOCH + Duration::from_millis(stamp)
     }
 
     /// Gets the prefix of this upid
@@ -177,7 +210,7 @@ impl Upid {
     /// let ms: u128 = 1720568902000;
     /// let upid = Upid::from_prefix_and_milliseconds("user", ms);
     ///
-    /// assert!(ms - u128::from(upid.milliseconds()) < 256);
+    /// assert!(ms - u128::from(upid.milliseconds()) < 257);
     /// ```
     pub const fn milliseconds(&self) -> u64 {
         ((self.0 >> 88) << 8) as u64
@@ -268,7 +301,7 @@ impl fmt::Display for Upid {
 mod tests {
     use super::*;
 
-    const EPS: u128 = 256;
+    const EPS: u128 = 257;
 
     #[test]
     fn can_into_thing() {
@@ -298,7 +331,7 @@ mod tests {
     fn test_order() {
         let dt = SystemTime::now();
         let upid1 = Upid::from_prefix_and_datetime("user", dt);
-        let upid2 = Upid::from_prefix_and_datetime("user", dt + Duration::from_millis(300));
+        let upid2 = Upid::from_prefix_and_datetime("user", dt + Duration::from_millis(EPS as u64));
         assert!(upid1 < upid2);
     }
 
@@ -321,7 +354,7 @@ mod tests {
         let upid = Upid::from_prefix_and_datetime("user", dt);
 
         assert!(upid.datetime() <= dt);
-        assert!(upid.datetime() + Duration::from_millis(300) >= dt);
+        assert!(upid.datetime() + Duration::from_millis(EPS as u64) >= dt);
     }
 
     #[test]
