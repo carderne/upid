@@ -14,13 +14,13 @@ const RANDO_CHAR_LEN: usize = 13;
 const VERSION_CHAR_LEN: usize = 1;
 
 /// Length of a string-encoded Upid
-pub const CHAR_LEN: usize = 26;
+const CHAR_LEN: usize = 26;
 
 /// 32-character alphabet modified from Crockford's
 /// Numbers first for sensible sorting, but full lower-case
 /// latin alphabet so any sensible prefix can be used
 /// Effectively a mapping from 8 bit byte -> 5 bit int -> base32 character
-const ENCODE: &[u8; 32] = b"234567abcdefghijklmnopqrstuvwxyz";
+pub const ENCODE: &[u8; 32] = b"234567abcdefghijklmnopqrstuvwxyz";
 
 /// Speedy O(1) inverse lookup
 /// base32 char -> ascii byte int -> base32 alphabet index
