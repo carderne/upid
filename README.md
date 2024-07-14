@@ -40,6 +40,13 @@ with psycopg.connect("postgresql://...") as conn:
     print(res)          # user_2accvpp5guht4dts56je5a
 ```
 
+## Table of contents
+If you don't have time for ASCII art, you can skip to the good stuff:
+* [Specification](#specification)
+* [Python implementation](#python-implementation)
+* [Rust implementation](#rust-implementation)
+* [Postgres extension](#postgres-extension)
+
 ## Specification
 Key changes relative to ULID:
 1. Uses a modified form of [Crockford's base32](https://www.crockford.com/base32.html) that uses lower-case and includes the full alphabet (for prefix flexibility).
