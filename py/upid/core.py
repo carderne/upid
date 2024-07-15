@@ -53,12 +53,12 @@ class UPID:
     @classmethod
     def from_prefix_and_milliseconds(cls: type[Self], prefix: str, milliseconds: int) -> Self:
         """
-        Create a new `UPID` from a `prefix`, using the supplied `timestamp`.
+        Create a new `UPID` from a `prefix`, using the supplied `milliseconds`.
 
         `milliseconds` must be an int in milliseconds since the epoch.
 
         The timestamp is converted to 6 bytes, but we drop 1 byte, resulting
-        in a time precision of about 100 milliseconds
+        in a time precision of about 256 milliseconds
 
         The prefix is padded with 'z' characters (if too short) and
         trimmed to 4 characters (if too long). Supply a prefix of exactly
