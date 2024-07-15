@@ -40,12 +40,18 @@ with psycopg.connect("postgresql://...") as conn:
     print(res)          # user_2accvpp5guht4dts56je5a
 ```
 
-## Table of contents
+## Demo
+You can give it a spin at [upid.rdrn.me](https://upid.rdrn.me/).
+
+## Implementations
+
 If you don't have time for ASCII art, you can skip to the good stuff:
-* [Specification](#specification)
-* [Python implementation](#python-implementation)
-* [Rust implementation](#rust-implementation)
-* [Postgres extension](#postgres-extension)
+| Language   | Link                                                    |
+| --------   | ------------------------------------------------------- |
+| Python     | [in this repo (scroll down)](#python-implementation)    |
+| Postgres   | [in this repo (scroll down)](#postgres-extension)  |
+| Rust       | [in this repo (scroll down)](#rust-implementation)      |
+| TypeScript | [carderne/upid-ts](https://github.com/carderne/upid-ts) |
 
 ## Specification
 Key changes relative to ULID:
