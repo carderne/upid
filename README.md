@@ -43,6 +43,16 @@ with psycopg.connect("postgresql://...") as conn:
 ## Demo
 You can give it a spin at [upid.rdrn.me](https://upid.rdrn.me/).
 
+## Benefits
+- **Context**: You'll never forget what kind of ID you're staring at. Is it a `user_` or a `prod_` or maybe a `role_`?
+Your product team will thank you, as will your API users.
+- **Compatible**: Under the hood it's just 128 bits, so you can pass it to Postgres or anything else and pretend it's a UUID.
+But you'll know your prefix is safely waiting to remind you what it is.
+- **K-Sortable**: UPID has 256 millisecond timestamp precision.
+This ensures data locality and while not leaking too much information about timing and ordering.
+- **Pretty**: The encoding is short, easily copy-pastable and URL-safe.
+It uses lower-case letters, which are prettier than upper-case ones.
+
 ## Implementations
 
 If you don't have time for ASCII art, you can skip to the good stuff:
@@ -92,7 +102,7 @@ Key changes relative to ULID:
 ```
 
 ### Collision
-Relative to ULID, the time precision is reduced from 48 to 40 bits (keeping the most significant bits, so overflow still won't occur until 10889 AD), and the randomness reduced from 80 to 64 bits.
+Relative to ULID, the time precision is reduced from 48 to 40 bits (keeping the most significant bits, so overflow still won't occur until 10,889 AD), and the randomness reduced from 80 to 64 bits.
 
 The timestamp precision at 40 bits is around 250 milliseconds. In order to have a 50% probability of collision with 64 bits of randomness, you would need to generate around **4 billion items per 250 millisecond window**.
 
@@ -290,3 +300,10 @@ cargo pgrx test pg16
 # or       run
 # or       install
 ```
+
+## Related work
+- [ULID](https://github.com/ulid/spec): like UPID, but without the prefix
+- [UUIDv7](https://www.ietf.org/archive/id/draft-peabody-dispatch-new-uuid-format-04.html#name-uuid-version-7): like ULID, but an IETF standard and using standard hexadecimal UUID-style (long) string encoding
+- [TypeID](https://github.com/jetify-com/typeid): a UUID with a prefix, except the prefix is separate from the 128-bit binary so must be added/stripped at some boundary (or everything stored as text)
+- [cuid2](https://github.com/paralleldrive/cuid2): only text (can't store binary), not K-Sortable (deliberately), slower (deliberately) and more random
+- [Nano ID](https://github.com/ai/nanoid): only text (can't store binary), only random, bigger alphabet (shorter string)
