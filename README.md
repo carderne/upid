@@ -75,15 +75,15 @@ Key changes relative to ULID:
 
 ```elm
     user       2accvpp5      guht4dts56je5       a
-   |----|     |--------|    |-------------|   |-----|
+   └────┘     └────────┘    └─────────────┘   └─────┘
    prefix       time            random        version     total
    4 chars      8 chars         13 chars      1 char      26 chars
-       \________/________________|___________    |
-               /                 |           \   |
-              /                  |            \  |
-           40 bits            64 bits         24 bits    128 bits
-           5 bytes            8 bytes         3 bytes     16 bytes
-           time               random      prefix+version
+       └────────│────────────────│───────────┐  │
+                │                │           │  │
+                │                │           │  │
+             40 bits            64 bits      24 bits     128 bits
+             5 bytes            8 bytes      3 bytes      16 bytes
+             time               random       prefix+version
 ```
 
 ### Binary layout
