@@ -1,0 +1,9 @@
+[package]
+name = "upid-example-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+postgres = { version = "0.19", features = ["with-uuid-1"] }
+upid = { version = "0.2", features = ["uuid"] }
+uuid = "1.10.0"

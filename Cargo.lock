@@ -1279,15 +1279,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
 
 [[package]]
-name = "rust"
-version = "0.1.0"
-dependencies = [
- "postgres",
- "upid 0.1.13",
- "uuid",
-]
-
-[[package]]
 name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1790,11 +1781,21 @@ dependencies = [
 
 [[package]]
 name = "upid"
-version = "0.1.13"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "274cb48d804181f86b04059a9c13e8f37a263f1d9e4174527f2405c2aa048202"
+checksum = "91f9bce70b5a894d01dd2ad411f308b7a080b1fa16866aa2ec62166cfdd0d379"
 dependencies = [
  "rand",
+ "uuid",
+]
+
+[[package]]
+name = "upid-example-rust"
+version = "0.1.0"
+dependencies = [
+ "postgres",
+ "upid 0.2.0",
+ "uuid",
 ]
 
 [[package]]
