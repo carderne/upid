@@ -34,6 +34,8 @@
 // https://github.com/dylanhart/ulid-rs
 
 mod b32;
+#[cfg(feature = "uuid")]
+mod uuid;
 
 pub use crate::b32::{DecodeError, ENCODE};
 

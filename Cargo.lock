@@ -1102,6 +1102,7 @@ dependencies = [
  "bytes",
  "fallible-iterator",
  "postgres-protocol",
+ "uuid",
 ]
 
 [[package]]
@@ -1276,6 +1277,15 @@ name = "regex-syntax"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
+
+[[package]]
+name = "rust"
+version = "0.1.0"
+dependencies = [
+ "postgres",
+ "upid 0.1.13",
+ "uuid",
+]
 
 [[package]]
 name = "rustc-demangle"
@@ -1775,6 +1785,16 @@ name = "upid"
 version = "0.0.999"
 dependencies = [
  "rand",
+ "uuid",
+]
+
+[[package]]
+name = "upid"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "274cb48d804181f86b04059a9c13e8f37a263f1d9e4174527f2405c2aa048202"
+dependencies = [
+ "rand",
 ]
 
 [[package]]
@@ -1783,7 +1803,7 @@ version = "0.0.0"
 dependencies = [
  "pgrx",
  "pgrx-tests",
- "upid",
+ "upid 0.0.999",
 ]
 
 [[package]]
