@@ -40,6 +40,14 @@ with psycopg.connect("postgresql://...") as conn:
     print(res)          # user_2accvpp5guht4dts56je5a
 ```
 
+## Examples
+You can try out the Python and Rust examples in this repository.
+They both involve spinning up a Postgres DB and inserting a UPID as itself, as a UUID and as text.
+- [./examples/python](./examples/python)
+- [./examples/rust](./examples/rust)
+
+There are also TypeScript examples for browser and Node (with Postgres) in the [upid-ts](https://github.com/carderne/upid-ts) repo.
+
 ## Demo
 You can give it a spin at [upid.rdrn.me](https://upid.rdrn.me/).
 

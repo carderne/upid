@@ -55,11 +55,12 @@ dev-dependencies = [
 ]
 
 [tool.ruff]
+include = ["py/**/*.py"]
+exclude = ["examples"]
 target-version = "py39"
 line-length = 120
 
 [tool.ruff.lint]
-ignore-init-module-imports = true
 select = ["A", "E", "F", "I", "N", "Q", "U", "T100"]
 
 [tool.ruff.lint.isort]
