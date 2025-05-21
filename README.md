@@ -4,7 +4,7 @@ pronounced YOO-pid
 
 **aka Universally Unique Prefixed Lexicographically Sortable Identifier**
 
-This is the spec and Python implementation for UPID.
+This is the spec and Python and Rust implementations for UPID. The Typescript implementation is [here](https://github.com/carderne/upid-ts).
 
 UPID is based on [ULID](https://github.com/ulid/spec) but with some modifications, inspired by [this article](https://brandur.org/nanoglyphs/026-ids) and [Stripe IDs](https://dev.to/stripe/designing-apis-for-humans-object-ids-3o5a).
 
