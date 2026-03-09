@@ -8,10 +8,10 @@ repository = "https://github.com/carderne/upid"
 
 version = "0.0.999"  # set by Github Actions CI
 
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-rand = { version = "0.8" }
+rand = { version = "0.10" }
 uuid = { version = "1", optional = true }
 
 [lib]

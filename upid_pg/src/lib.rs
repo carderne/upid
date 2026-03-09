@@ -9,28 +9,21 @@
 use core::ffi::CStr;
 use inner_upid::Upid as InnerUpid;
 use pgrx::{
-    pg_shmem_init,
-    pg_sys::{Datum, Oid},
+    callconv::{ArgAbi, BoxRet, FcInfo},
+    datum::{Datum, UnboxDatum},
+    pg_sys::Oid,
     prelude::*,
-    rust_regtypein,
-    shmem::*,
-    PgLwLock, StringInfo, Uuid,
+    rust_regtypein, StringInfo, Uuid,
 };
 
 pgrx::pg_module_magic!();
-
-static SHARED_UPID: PgLwLock<u128> = PgLwLock::new();
-
-#[pg_guard]
-pub extern "C" fn _PG_init() {
-    pg_shmem_init!(SHARED_UPID);
-}
 
 #[allow(non_camel_case_types)]
 #[derive(
     PostgresType, PostgresEq, PostgresHash, PostgresOrd, Debug, PartialEq, PartialOrd, Eq, Hash, Ord,
 )]
 #[inoutfuncs]
+#[bikeshed_postgres_type_manually_impl_from_into_datum]
 pub struct upid(u128);
 
 impl InOutFuncs for upid {
@@ -54,7 +47,7 @@ impl InOutFuncs for upid {
 
 impl IntoDatum for upid {
     #[inline]
-    fn into_datum(self) -> Option<Datum> {
+    fn into_datum(self) -> Option<pg_sys::Datum> {
         self.0.to_ne_bytes().into_datum()
     }
 
@@ -66,16 +59,50 @@ impl IntoDatum for upid {
 
 impl FromDatum for upid {
     #[inline]
-    unsafe fn from_polymorphic_datum(datum: Datum, is_null: bool, typoid: Oid) -> Option<Self>
+    unsafe fn from_polymorphic_datum(datum: pg_sys::Datum, is_null: bool, typoid: Oid) -> Option<Self>
     where
         Self: Sized,
     {
-        let bytes: &[u8] = FromDatum::from_polymorphic_datum(datum, is_null, typoid)?;
+        let bytes: &[u8] = unsafe { FromDatum::from_polymorphic_datum(datum, is_null, typoid) }?;
 
         let mut len_bytes = [0u8; 16];
         len_bytes.copy_from_slice(bytes);
 
         Some(upid(u128::from_ne_bytes(len_bytes)))
+    }
+}
+
+unsafe impl BoxRet for upid {
+    unsafe fn box_into<'fcx>(self, fcinfo: &mut FcInfo<'fcx>) -> Datum<'fcx> {
+        match IntoDatum::into_datum(self) {
+            None => fcinfo.return_null(),
+            Some(datum) => unsafe { fcinfo.return_raw_datum(datum) },
+        }
+    }
+}
+
+unsafe impl UnboxDatum for upid {
+    type As<'dat> = Self where Self: 'dat;
+    unsafe fn unbox<'dat>(datum: Datum<'dat>) -> Self::As<'dat>
+    where
+        Self: 'dat,
+    {
+        unsafe {
+            <Self as FromDatum>::from_datum(core::mem::transmute(datum), false).unwrap()
+        }
+    }
+}
+
+unsafe impl<'fcx> ArgAbi<'fcx> for upid
+where
+    Self: 'fcx,
+{
+    unsafe fn unbox_arg_unchecked(arg: pgrx::callconv::Arg<'_, 'fcx>) -> Self {
+        let index = arg.index();
+        unsafe {
+            arg.unbox_arg_using_from_datum()
+                .unwrap_or_else(|| panic!("argument {index} must not be null"))
+        }
     }
 }
 
@@ -123,7 +150,8 @@ CREATE CAST (upid AS uuid) WITH FUNCTION upid_to_uuid(upid) AS IMPLICIT;
 CREATE CAST (upid AS bytea) WITH FUNCTION upid_to_bytea(upid) AS IMPLICIT;
 CREATE CAST (upid AS timestamp) WITH FUNCTION upid_to_timestamp(upid) AS IMPLICIT;
 "#,
-    name = "upid_casts"
+    name = "upid_casts",
+    requires = [upid_from_uuid, upid_to_uuid, upid_to_bytea, upid_to_timestamp]
 );
 
 #[cfg(any(test, feature = "pg_test"))]
