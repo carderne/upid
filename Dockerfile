@@ -31,6 +31,7 @@ COPY Cargo.lock Cargo.lock
 COPY Cargo.toml Cargo.toml
 COPY upid_pg upid_pg
 COPY upid_rs upid_rs
+COPY examples examples
 RUN cargo pgrx install --package upid_pg
 
 # ##################################
