@@ -1,4 +1,4 @@
-ARG PG_MAJOR=16
+ARG PG_MAJOR=18
 
 # ##################################
 # builder image
@@ -22,8 +22,8 @@ ENV HOME=/home/builder
 ENV PATH=/home/builder/.cargo/bin:$PATH
 WORKDIR /home/builder
 
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain 1.79.0
-RUN cargo install cargo-pgrx --version 0.11.4 --locked
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path --profile minimal --default-toolchain stable
+RUN cargo install cargo-pgrx --version 0.17.0 --locked
 RUN cargo pgrx init --pg${PG_MAJOR} $(which pg_config)
 
 COPY .cargo .cargo

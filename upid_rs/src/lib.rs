@@ -43,7 +43,7 @@ use std::fmt;
 use std::str::FromStr;
 use std::time::{Duration, SystemTime};
 
-use rand::Rng;
+use rand::RngExt;
 
 const VERSION: &str = "a";
 
@@ -127,8 +127,8 @@ impl Upid {
         let time_bits = milliseconds >> 8;
 
         // get 64 bits of randomness on lsb side of a u128
-        let mut source = rand::thread_rng();
-        let random = source.gen::<u64>() as u128;
+        let mut source = rand::rng();
+        let random = source.random::<u64>() as u128;
 
         // pad with 'z' if shorter than 4, cut to 4 if longer
         let prefix = format!("{:z<4}", prefix);

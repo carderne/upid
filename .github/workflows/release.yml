@@ -70,8 +70,8 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --output "type=image,push=true" \
-            --tag "carderne/postgres-upid:16-${RELEASE_TAG}" \
-            --tag "carderne/postgres-upid:16" \
+            --tag "carderne/postgres-upid:18-${RELEASE_TAG}" \
+            --tag "carderne/postgres-upid:18" \
             --tag "carderne/postgres-upid:latest" \
             --cache-from "carderne/postgres-upid:latest" \
             --cache-to type=inline \
@@ -86,7 +86,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        postgres: [16]
+        postgres: [18]
     env:
       NAME: upid_pg
       PKG_NAME: upid-pg
@@ -110,7 +110,7 @@ jobs:
           # Ensure installed pg_config is first on path
           export PATH=$PATH:/usr/lib/postgresql/${{ matrix.postgres }}/bin
 
-          cargo install cargo-pgrx --version 0.11.2 --locked
+          cargo install cargo-pgrx --version 0.17.0 --locked
           cargo pgrx init --pg${{ matrix.postgres }}=/usr/lib/postgresql/${{ matrix.postgres }}/bin/pg_config
       - name: Build
         run: |
@@ -162,6 +162,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG=${{ github.ref_name }}
-          FILE=${{ env.PKG_NAME }}-${TAG}-pg16-amd64-linux-gnu.deb
+          FILE=${{ env.PKG_NAME }}-${TAG}-pg${{ matrix.postgres }}-amd64-linux-gnu.deb
           mv package.deb $FILE
           gh release upload "$TAG" "$FILE"
